@@ -1,7 +1,14 @@
-# Lynx
+# Lynx (WASM-enabled fork)
 
+[![WASM Build](https://github.com/CrispStrobe/lynx-chess/actions/workflows/build-wasm.yml/badge.svg?branch=wasm-browser)](https://github.com/CrispStrobe/lynx-chess/actions/workflows/build-wasm.yml)
 [![Lynx build][buildlogo]][buildlink]
 [![Lynx release][releaselogo]][releaselink]
+
+> **This is a fork of [lynx-chess/Lynx](https://github.com/lynx-chess/Lynx)** that adds browser WebAssembly support. The `wasm-browser` branch compiles Lynx to WASM via .NET `wasm-tools` so it can run in any modern browser. See **[WASM.md](WASM.md)** for full documentation.
+
+**Download pre-built WASM:** [Releases](https://github.com/CrispStrobe/lynx-chess/releases) | **Used by:** [CrispChess](https://github.com/CrispStrobe/CrispChess)
+
+---
 
 ## Introduction
 
@@ -17,7 +24,9 @@ You can find Lynx:
 
 - As a self-contained executable, downloadable from [Releases](https://github.com/lynx-chess/Lynx/releases).
 
-Lichess bot can be played directly, but a chess GUI that supports UCI protocol is needed to play against the self-contained version.
+- **As a WebAssembly module** for in-browser play, downloadable from [this fork's Releases](https://github.com/CrispStrobe/lynx-chess/releases).
+
+Lichess bot can be played directly, but a chess GUI that supports UCI protocol is needed to play against the self-contained version. The WASM build can be loaded directly in a browser via JavaScript — see [WASM.md](WASM.md).
 
 ## Strength
 

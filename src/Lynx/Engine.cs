@@ -208,7 +208,9 @@ public sealed partial class Engine : IDisposable
         }
         _isSearching = true;
 
+        #if !BROWSER_WASM
         Thread.CurrentThread.Priority = ThreadPriority.Highest;
+#endif
 
         try
         {

@@ -30,6 +30,7 @@ public static class OnlineTablebaseProber
         .OrResult(response => response.StatusCode == HttpStatusCode.TooManyRequests)
         .WaitAndRetryAsync(4, retryAttempt => TimeSpan.FromMilliseconds(Math.Pow(2, 10 + retryAttempt)));    // 128, 256, 512, 1024ms
 
+#if !BROWSER_WASM
     private readonly static HttpClient _client = new(
 #pragma warning disable IDISP004 // Don't ignore created IDisposable
         new PolicyHttpMessageHandler(_retryPolicy)
@@ -40,6 +41,12 @@ public static class OnlineTablebaseProber
     {
         BaseAddress = new("http://tablebase.lichess.ovh/"),
     };
+#else
+    private readonly static HttpClient _client = new()
+    {
+        BaseAddress = new("http://tablebase.lichess.ovh/"),
+    };
+#endif
 
     private readonly static JsonSerializerOptions _serializerOptions = new()
     {

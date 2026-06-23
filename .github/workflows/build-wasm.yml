@@ -1,0 +1,94 @@
+name: Build Lynx WASM
+
+on:
+  push:
+    branches: [wasm-browser]
+    tags: ['v*']
+  pull_request:
+    branches: [wasm-browser]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Install wasm-tools workload
+        run: dotnet workload install wasm-tools
+
+      - name: Restore
+        run: dotnet restore src/Lynx.Wasm/Lynx.Wasm.csproj
+
+      - name: Publish (interpreter)
+        run: dotnet publish src/Lynx.Wasm/Lynx.Wasm.csproj -c Release -p:RunAOTCompilation=false
+
+      - name: Package WASM bundle
+        run: |
+          BUNDLE=src/Lynx.Wasm/bin/Release/net10.0/browser-wasm/AppBundle
+          mkdir -p dist/lynx-wasm
+          cp -r $BUNDLE/_framework dist/lynx-wasm/
+          rm -f dist/lynx-wasm/_framework/*.map
+          cd dist && tar czf lynx-wasm.tar.gz lynx-wasm/
+          echo "BUNDLE_SIZE=$(du -sh lynx-wasm/ | cut -f1)" >> $GITHUB_ENV
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lynx-wasm
+          path: dist/lynx-wasm.tar.gz
+
+      - name: Test with Node.js
+        run: |
+          cat > test.mjs << 'TESTEOF'
+          import { dotnet } from './dist/lynx-wasm/_framework/dotnet.js';
+          const { getAssemblyExports, getConfig } = await dotnet.withDiagnosticTracing(false).create();
+          const config = getConfig();
+          const exports = await getAssemblyExports(config.mainAssemblyName);
+          const interop = exports.LynxWasm.UciInterop;
+          const init = await interop.Initialize();
+          if (init !== 'ok') { console.error('Init failed:', init); process.exit(1); }
+          const uci = await interop.SendCommand('uci');
+          if (!uci.includes('uciok')) { console.error('No uciok'); process.exit(1); }
+          await interop.SendCommand('isready');
+          await interop.SendCommand('position startpos');
+          const result = await interop.SendSearchCommand('go depth 6');
+          if (!result.includes('bestmove')) { console.error('No bestmove'); process.exit(1); }
+          console.log('ALL TESTS PASSED');
+          process.exit(0);
+          TESTEOF
+          node test.mjs
+
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: lynx-wasm
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: lynx-wasm.tar.gz
+          body: |
+            Lynx chess engine compiled to WebAssembly.
+
+            ## Usage
+            Extract `lynx-wasm.tar.gz` and place the `_framework/` directory
+            in your web app's static files. See the README for integration details.
+
+            ## Bundle contents
+            - `dotnet.native.wasm` — .NET Mono WASM runtime
+            - `Lynx.wasm` — Lynx engine (C#)
+            - `Lynx.Wasm.wasm` — JS interop wrapper
+            - `dotnet.js`, `dotnet.native.js`, `dotnet.runtime.js` — JS glue
+            - .NET framework assemblies (collections, threading, etc.)

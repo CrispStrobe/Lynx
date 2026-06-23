@@ -54,7 +54,7 @@ public sealed class Searcher : IDisposable
 
         AllocateExtraEngines();
 
-#if !DEBUG
+#if !DEBUG && !BROWSER_WASM
         Warmup();
 #endif
 

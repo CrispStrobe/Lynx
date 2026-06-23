@@ -1,0 +1,6 @@
+<linker>
+  <!-- Preserve the JSExport entry points -->
+  <assembly fullname="Lynx.Wasm">
+    <type fullname="LynxWasm.UciInterop" preserve="all" />
+  </assembly>
+</linker>
